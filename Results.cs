@@ -9,7 +9,7 @@ namespace FastTouch
         public static string score;
         public static string speed;
         public static string mistakes;
-        public static bool startOrWork;
+        public static string appMode = "Main menu";
         public static bool warmingUp = false;
         public static string statsPath = @"Properties\Stats.txt";
         public static string mistakesPath = @"Properties\MaxNoMistakes.txt";
