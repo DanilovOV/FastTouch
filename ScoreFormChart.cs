@@ -25,13 +25,13 @@ namespace FastTouch
         {
             if (e.KeyCode == Keys.Enter)
             {
-                Results.startOrWork = true;
+                Results.appMode = "Main menu";
                 File.WriteAllText(Results.mistakesPath, Results.maxNoMistakesCount.ToString());
                 Close();
             }
             if (e.KeyCode == Keys.Escape)
             {
-                Results.startOrWork = false;
+                Results.appMode = "Session";
                 Close();
             }
         }
