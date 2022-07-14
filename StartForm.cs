@@ -34,7 +34,7 @@ namespace FastTouch
         bool startMode = true; // Показывает, находимся ли мы в главном меню, или нет
         DateTime dateForTimer;
         Timer timerUI = new Timer(); // Создаем таймер, который будет управлять лейблом с текущим временем сеанса печати
-        Timer timerForAnim = new Timer();
+        Timer timerForAnim = new Timer(); // Таймер, задающий интервал для анимации появления текста при начале сеанса печати
         Stopwatch stopwatch = new Stopwatch(); // Создаем секундомер для подсчета скорости печати
 
         // Создаем объекты других форм
@@ -63,7 +63,7 @@ namespace FastTouch
             timerUI.Interval = 1000;
             timerUI.Tick += new EventHandler(Timer_Tick);
             timerForAnim.Interval = 25;
-            timerForAnim.Tick += new EventHandler(SpawnTextAnim);
+            timerForAnim.Tick += new EventHandler(StartAnimation);
 
             using (StreamReader reader = new StreamReader(textPath))
             {
@@ -139,18 +139,21 @@ namespace FastTouch
         }
 
         // Анимация появления текста при старте сеанса
-        public void SpawnTextAnim(object sender, EventArgs e)
+        public void StartAnimation(object sender, EventArgs e)
         {
-            LabelText.Text += spaceArr[animCount].ToString();
-            if (spaceArr[animCount].ToString() == " ")
+            if (Results.appMode == "Session")
             {
-                LabelText.Text += " ";
-            }
-            animCount++;
-            if (animCount == spaceArr.Length)
-            {
-                timerForAnim.Stop();
-                animCount = 0;
+                LabelText.Text += spaceArr[animCount].ToString();
+                if (spaceArr[animCount].ToString() == " ")
+                {
+                    LabelText.Text += " ";
+                }
+                animCount++;
+                if (animCount == spaceArr.Length)
+                {
+                    timerForAnim.Stop();
+                    animCount = 0;
+                }
             }
         }
 
