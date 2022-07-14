@@ -5,12 +5,12 @@ namespace FastTouch
 {
     public static class Results
     {
-        public static string time;
-        public static string score;
-        public static string speed;
-        public static string mistakes;
-        public static string appMode = "Main menu";
-        public static bool warmingUp = false;
+        public static string time; // время сеанса печати
+        public static string score; // количество напечатанных символов для сеанса
+        public static string speed; // скорость печати для сеанса
+        public static string mistakes; // количество ошибок для сеанса
+        public static string appMode = "Main menu"; // режим работы приложения: Main menu, Session
+        public static bool warmingUp = false; // режим разминки
         public static string statsPath = @"Properties\Stats.txt";
         public static string mistakesPath = @"Properties\MaxNoMistakes.txt";
         public static double allSymbols = 0;
