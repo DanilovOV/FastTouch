@@ -6,9 +6,11 @@ namespace FastTouch
 {
     public partial class ScoreFormChart : Form
     {
+        AppState appStates;
 
-        public ScoreFormChart()
+        public ScoreFormChart(AppState appStates)
         {
+            this.appStates = appStates;
             InitializeComponent();
         }
 
@@ -25,16 +27,15 @@ namespace FastTouch
         {
             if (e.KeyCode == Keys.Enter)
             {
-                Results.appMode = "Main menu";
+                appStates.SetMenuState();
                 File.WriteAllText(Results.mistakesPath, Results.maxNoMistakesCount.ToString());
                 Close();
             }
             if (e.KeyCode == Keys.Escape)
             {
-                Results.appMode = "Session";
+                appStates.SetSessionState();
                 Close();
             }
         }
     }
 }
-

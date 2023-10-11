@@ -36,7 +36,8 @@ namespace FastTouch
                 {
                     if (strArray2[0] == "minTimeForStats")
                     {
-                        minTimeForStats = (int.Parse(strArray2[1]) < 120000) ? 120000 : int.Parse(strArray2[1]);
+                        //minTimeForStats = (int.Parse(strArray2[1]) < 120000) ? 120000 : int.Parse(strArray2[1]);
+                        minTimeForStats = 1;
                     }
                     if (strArray2[0] == "backgroundMode")
                     {

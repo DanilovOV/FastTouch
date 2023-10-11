@@ -107,8 +107,8 @@
             this.TextBoxInput.Name = "TextBoxInput";
             this.TextBoxInput.Size = new System.Drawing.Size(0, 13);
             this.TextBoxInput.TabIndex = 1;
-            this.TextBoxInput.TextChanged += new System.EventHandler(this.TextIsChanged);
-            this.TextBoxInput.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.KeyCommandHandler);
+            this.TextBoxInput.TextChanged += new System.EventHandler(this.MainTextboxChanged);
+            this.TextBoxInput.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.KeySoundBlock);
             // 
             // StartForm
             // 
@@ -134,6 +134,7 @@
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "FastTouch";
             this.TransparencyKey = this.BackColor;
+            this.Deactivate += new System.EventHandler(this.StartForm_Deactivate);
             this.Load += new System.EventHandler(this.StartForm_Load);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.StartForm_KeyDown);
             this.ResumeLayout(false);
@@ -142,13 +143,12 @@
         }
 
         #endregion
-
-        private System.Windows.Forms.Label LabelText;
-        private System.Windows.Forms.Label LabelPastText;
         private System.Windows.Forms.Label TimerLabel;
         private System.Windows.Forms.Label LabelSubText;
         private System.Windows.Forms.Label LabelSubPastText;
         private System.Windows.Forms.TextBox TextBoxInput;
+        public System.Windows.Forms.Label LabelText;
+        public System.Windows.Forms.Label LabelPastText;
     }
 }
 

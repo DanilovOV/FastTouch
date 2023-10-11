@@ -1,6 +1,4 @@
 ﻿using System;
-using System.ComponentModel;
-using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
 
@@ -8,8 +6,11 @@ namespace FastTouch
 {
     public partial class ScoreForm : Form
     {
-        public ScoreForm()
+        AppState appStates;
+
+        public ScoreForm(AppState appStates)
         {
+            this.appStates = appStates;
             InitializeComponent();
         }
 
@@ -26,13 +27,13 @@ namespace FastTouch
         {
             if (e.KeyCode == Keys.Enter)
             {
-                Results.appMode = "Main menu";
+                appStates.SetMenuState();
                 File.WriteAllText(Results.mistakesPath, Results.maxNoMistakesCount.ToString());
                 Close();
             }
             if (e.KeyCode == Keys.Escape)
             {
-                Results.appMode = "Session";
+                appStates.SetSessionState();
                 Close();
             }
         }
