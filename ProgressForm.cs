@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Windows.Forms;
 
 namespace FastTouch
@@ -10,6 +12,7 @@ namespace FastTouch
 
         List<SessionData> sessions;
         SessionDataViews sessionDataViews;
+        short sessionsViewLimit = 300;
 
         public ProgressForm()
         {
@@ -25,10 +28,6 @@ namespace FastTouch
             ProgressData.SelectionStart = 0;
 
             initFileStats();
-
-            // ТЕСТИРУЕТСЯ ======================================
-            PeriodStats periodStats = new PeriodStats(sessions);
-            // ТЕСТИРУЕТСЯ ======================================
         }
 
         private void initFileStats()
@@ -52,11 +51,30 @@ namespace FastTouch
 
         private void SetProgressChartData()
         {
-            for (int i = sessions.Count - 1; i >= 0; i--) 
+            StringBuilder progressTableText = new StringBuilder();
+
+            if (sessions.Count < sessionsViewLimit)
             {
-                ProgressData.Text += (sessionDataViews.GetUserStatsViewString(sessions[i]) + Environment.NewLine);
-                ProgressChart.Series[0].Points.AddXY(i, sessions[i].speed);
+                for (int i = sessions.Count - 1; i >= 0; i--)
+                {
+                    progressTableText.Append(sessionDataViews.GetUserStatsViewString(sessions[i]) + Environment.NewLine);
+                    ProgressChart.Series[0].Points.AddXY(i, sessions[i].speed);
+                }
             }
+            else
+            {
+                for (int i = sessions.Count - 1; i >= 0; i--)
+                {
+                    progressTableText.Append(sessionDataViews.GetUserStatsViewString(sessions[i]) + Environment.NewLine);
+                }
+
+                for (int i = sessions.Count - sessionsViewLimit; i < sessions.Count; i++)
+                {
+                    ProgressChart.Series[0].Points.AddXY(i + 1 - (sessions.Count - sessionsViewLimit), sessions[i].speed);
+                }
+            }
+
+            ProgressData.Text = progressTableText.ToString();
         }
 
         private void ProgressFormKeyDown(object sender, KeyEventArgs e)

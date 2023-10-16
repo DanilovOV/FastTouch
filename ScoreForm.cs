@@ -1,16 +1,17 @@
 ﻿using System;
 using System.IO;
+using System.Net.NetworkInformation;
 using System.Windows.Forms;
 
 namespace FastTouch
 {
     public partial class ScoreForm : Form
     {
-        AppState appStates;
+        AppState appState;
 
-        public ScoreForm(AppState appStates)
+        public ScoreForm(AppState appState)
         {
-            this.appStates = appStates;
+            this.appState = appState;
             InitializeComponent();
         }
 
@@ -21,19 +22,20 @@ namespace FastTouch
             LabelSpeed.Text = Results.speed;
             LabelMistakes.Text = Results.mistakes;
             Text = !Results.warmingUp ? "Результат" : "Разминка";
+            appState.SetScoreState();
         }
 
         private void ScoreFormKeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
             {
-                appStates.SetMenuState();
+                appState.SetMenuState();
                 File.WriteAllText(Results.mistakesPath, Results.maxNoMistakesCount.ToString());
                 Close();
             }
             if (e.KeyCode == Keys.Escape)
             {
-                appStates.SetSessionState();
+                appState.SetWaitInputState();
                 Close();
             }
         }

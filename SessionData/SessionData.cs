@@ -1,6 +1,5 @@
 ﻿using System;
-using static System.Net.Mime.MediaTypeNames;
-using static System.Resources.ResXFileRef;
+using System.Text.RegularExpressions;
 
 namespace FastTouch
 {
@@ -26,14 +25,27 @@ namespace FastTouch
 
         public SessionData(string dataString)
         {
-            string[] sessionProps = dataString.Split(Char.Parse(" "));
-
-            this.timestamp = long.Parse(sessionProps[0]);
-            this.date = sessionProps[1];
-            this.time = sessionProps[2];
-            this.speed = int.Parse(sessionProps[3]);
-            this.mistakesProcent = double.Parse(sessionProps[4]);
-            this.duration = sessionProps[5];
+            string[] sessionProps = Regex.Replace(dataString, " +", " ").Split(Char.Parse(" "));
+            
+            if (sessionProps.Length == 5)
+            {
+                // Старый формат записи без таймстампа
+                this.timestamp = 0;
+                this.date = sessionProps[0];
+                this.time = sessionProps[1];
+                this.speed = int.Parse(sessionProps[2]);
+                this.mistakesProcent = double.Parse(sessionProps[3]);
+                this.duration = sessionProps[4];
+            }
+            else
+            {
+                this.timestamp = long.Parse(sessionProps[0]);
+                this.date = sessionProps[1];
+                this.time = sessionProps[2];
+                this.speed = int.Parse(sessionProps[3]);
+                this.mistakesProcent = double.Parse(sessionProps[4]);
+                this.duration = sessionProps[5];
+            }
         }
     }
 }

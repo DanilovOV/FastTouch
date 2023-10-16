@@ -11,31 +11,26 @@ namespace FastTouch
     public partial class StartForm : Form
     {
         App app = new App();
-        AppState appStates;
+        AppState appState;
 
-        double mistakesProcent = 0; // Процент ошибочно введенных символов
         double score = 0; // Количество введенных символов для текущего сеанса печати
-        double mistakesCount = 0; // Количество ошибок для текущего сеанса печати
-        double sessionTime = 0; // Время текущего сеанса печати в мс
         double inputSpeed = 0; // Значение скорости печати для текущего сеанса печати
+        int noMistakesCount = 0; // Количество напечатанных без ошибок символов подряд
+        double mistakesCount = 0; // Количество ошибок для текущего сеанса печати
+        double mistakesProcent = 0; // Процент ошибочно введенных символов
 
         int startFilePoint = 0; // Хранит значение, определяющее с какого по счету символа будет браться текст для печати в файле
         int animCount = 0; // Счетчик для анимации появления текста при старте сеанса
-        int noMistakesCount = 0; // Количество напечатанных без ошибок символов подряд
         string textData; // Хранит обработанный текст из файла с текстом для печати
         string inputSymbol; // Текущий символ, который нужно ввести
         char[] spaceArr; // В него помещается текст, который потом модифицируется для красивого отображения в лейблы
 
-        bool isFirstInputedSymbol = true; // Является ли символ первым введенным символом
-        bool timerStoped = false; // Показывает таймеру, нужно ли обновлять время в лейбле со временем сеанса
-        bool isShouldStartStopwatch = false; // Указывает, следует ли запустить таймер
         bool isStartAnimation = true; // Определяет, нужно ли запускать анимацию появления текста  
-        bool isStartMode = true; // Показывает, находимся ли мы в главном меню, или нет
 
         DateTime dateForTimer;
-        Timer timerUI = new Timer(); // Таймер для лейбла продолжительности сеанса
-        Timer timerForAnim = new Timer(); // Таймер для анимации появления текста
-        Stopwatch stopwatch = new Stopwatch(); // Создаем секундомер для подсчета скорости печати
+        public Timer appTickTimer = new Timer();
+        public Stopwatch stopwatch = new Stopwatch(); // Секундомер для подсчета скорости печати
+        Timer startSessionAnimTimer = new Timer(); // Таймер для анимации появления текста
 
         ScoreForm scoreForm;
         ScoreFormChart scoreFromChart;
@@ -61,9 +56,9 @@ namespace FastTouch
         public StartForm()
         {
             InitializeComponent();
-            appStates = new AppState(this);
-            scoreForm = new ScoreForm(appStates);
-            scoreFromChart = new ScoreFormChart(appStates);
+            appState = new AppState(this);
+            scoreForm = new ScoreForm(appState);
+            scoreFromChart = new ScoreFormChart(appState);
         }
 
         private void StartForm_Load(object sender, EventArgs e)
@@ -75,12 +70,12 @@ namespace FastTouch
 
             TextBoxInput.Text = "";
             Results.InitFileSettings();
-            appStates.SetMenuState();
+            appState.SetMenuState();
 
-            timerUI.Interval = 1000;
-            timerUI.Tick += new EventHandler(TimerTick);
-            timerForAnim.Interval = 25;
-            timerForAnim.Tick += new EventHandler(StartAnimation);
+            appTickTimer.Interval = 10;
+            appTickTimer.Tick += new EventHandler(AppTick);
+            startSessionAnimTimer.Interval = 25;
+            startSessionAnimTimer.Tick += new EventHandler(StartAnimation);
 
             using (StreamReader reader = new StreamReader(app.textPath))
             {
@@ -93,91 +88,61 @@ namespace FastTouch
             inputSymbol = textData.Substring(startFilePoint, 1);
         }
 
-        // Изменить строку невведенного текста
-        public void ChangeTextLabel()
-        {
-            spaceArr = textData.Substring(startFilePoint, 28).ToCharArray();
-
-            if (isStartAnimation)
-            {
-                timerForAnim.Start();
-                isStartAnimation = false;
-            }
-            else
-            {
-                for (int i = 0; i < spaceArr.Length; i++)
-                {
-                    LabelText.Text += spaceArr[i].ToString();
-                    if (spaceArr[i].ToString() == " ") LabelText.Text += " ";
-                }
-            }
-        }
-
-        // Анимация появления текста при старте сеанса
-        public void StartAnimation(object sender, EventArgs e)
-        {
-            if (appStates.state != AppState.States.session) return;
-            
-            LabelText.Text += spaceArr[animCount].ToString();
-            if (spaceArr[animCount].ToString() == " ")
-            {
-                LabelText.Text += " ";
-            }
-
-            animCount++;
-
-            if (animCount == spaceArr.Length)
-            {
-                timerForAnim.Stop();
-                animCount = 0;
-            }
-        }
-
         // Обработка горячих клавиш
         private void StartForm_KeyDown(object sender, KeyEventArgs e)
         {
-            // Если нажали Enter в главном меню, начинаем сеанс печати
-            if ((e.KeyCode == Keys.Enter) && isStartMode)
+            if (appState.state == AppState.States.menu)
             {
-                TextBoxInput.Focus();
-                isStartMode = false;
-                appStates.SetSessionState();
-                LabelText.Text = "";
-                LabelPastText.Text = "";
-                ChangeTextLabel();
-                dateForTimer = new DateTime(0, DateTimeKind.Unspecified);
-            }
+                // Инициализация сеанса печати
+                if (e.KeyCode == Keys.Enter)
+                {
+                    TextBoxInput.Focus();
+                    appState.SetWaitInputState();
+                    LabelText.Text = "";
+                    LabelPastText.Text = "";
 
-            if ((e.KeyCode == Keys.F1) && isStartMode)
-            {
-                Results.warmingUp = !Results.warmingUp;
-            }
+                    if (isStartAnimation)
+                    {
+                        spaceArr = textData.Substring(startFilePoint, 28).ToCharArray();
+                        startSessionAnimTimer.Start();
+                        isStartAnimation = false;
+                    }
+                    else
+                    {
+                        ChangeTextLabel();
+                    }
+                    
+                    dateForTimer = new DateTime(0, DateTimeKind.Unspecified);
+                }
 
-            if ((e.KeyCode == Keys.F2) && isStartMode)
-            {
-                Results.nowSymbols = startFilePoint;
-                Results.allSymbols = textData.Length;
-                progressForm.ShowDialog();
-            }
+                else if (e.KeyCode == Keys.F1)
+                {
+                    Results.warmingUp = !Results.warmingUp;
+                }
 
-            if ((e.KeyCode == Keys.F3) && isStartMode)
-            {
-                settingsForm.ShowDialog();
-            }
-            
-            if (e.KeyCode == Keys.Escape)
-            {   
-                // Если нажали Escape в главном меню, закрываем приложение
-                if (isStartMode)
+                else if (e.KeyCode == Keys.F2)
+                {
+                    Results.nowSymbols = startFilePoint;
+                    Results.allSymbols = textData.Length;
+                    progressForm.ShowDialog();
+                }
+
+                else if (e.KeyCode == Keys.F3)
+                {
+                    settingsForm.ShowDialog();
+                }
+
+                else if (e.KeyCode == Keys.Escape)
                 {
                     Application.Exit();
                 }
+            }
 
-                // Если нажали Escape во время сеанса печати
-                else
+            else if (appState.state == AppState.States.session || appState.state == AppState.States.waitInput)
+            {
+                if (e.KeyCode == Keys.Escape)
                 {
-                    timerStoped = true;
-                    stopwatch.Stop();
+                    appState.SetScoreState();
                     SetTextlabelsColor("inactive");
                     Results.time = $"Время: {dateForTimer:m:ss}";
                     Results.score = $"Напечатано: {score}";
@@ -188,26 +153,23 @@ namespace FastTouch
                         Results.mistakes = "Ошибок: 0%";
                     }
                     else
-                    {   
+                    {
                         mistakesProcent = (mistakesCount / (score + mistakesCount)) * 100;
                         Results.mistakes = $"Ошибок: {Math.Round(mistakesProcent, 1)}% ({mistakesCount})";
                     }
 
                     // Логика определения и записи скорости печати
-                    if (sessionTime == 0 && stopwatch.ElapsedMilliseconds == 0)
+                    if (stopwatch.ElapsedMilliseconds == 0 && stopwatch.ElapsedMilliseconds == 0)
                     {
                         Results.speed = "Скорость: 0 зн/мин";
                     }
                     else
                     {
-                        sessionTime += stopwatch.ElapsedMilliseconds;
-                        stopwatch.Reset();
-
-                        inputSpeed = (score * 60000) / sessionTime;
+                        inputSpeed = (score * 60000) / stopwatch.ElapsedMilliseconds;
                         Results.speed = $"Скорость: {Math.Round(inputSpeed)} зн/мин";
                     }
 
-                    if (sessionTime >= 5000)
+                    if (stopwatch.ElapsedMilliseconds >= 5000)
                     {
                         scoreFromChart.ShowDialog();
                     }
@@ -216,23 +178,20 @@ namespace FastTouch
                         scoreForm.ShowDialog();
                     }
 
-                    // Далее логика действий после выхода из окна результатов
+                    // Действия после выхода из окна результатов
                     SetTextlabelsColor("active");
-                    isShouldStartStopwatch = true;
 
-                    if (appStates.state == AppState.States.menu)
+                    if (appState.state == AppState.States.menu)
                     {
-                        if (sessionTime >= Results.minTimeForStats && inputSpeed > inputSpeedRecord)
+                        if (stopwatch.ElapsedMilliseconds >= Results.minTimeForStats && inputSpeed > inputSpeedRecord)
                         {
                             inputSpeedRecord = (int)Math.Round(inputSpeed);
                         }
 
-                        appStates.SetMenuState();
-                        isStartMode = true;
+                        appState.SetMenuState();
                         isStartAnimation = true;
-                        isFirstInputedSymbol = true;
 
-                        if ((sessionTime >= Results.minTimeForStats) && !Results.warmingUp)
+                        if ((stopwatch.ElapsedMilliseconds >= Results.minTimeForStats) && !Results.warmingUp)
                         {
                             WriteStats();
                         }
@@ -241,8 +200,7 @@ namespace FastTouch
                         File.WriteAllText(app.startValuePath, startFilePoint.ToString());
                         mistakesCount = 0;
                         score = 0;
-                        sessionTime = 0;
-                        timerUI.Stop();
+                        stopwatch.Reset();
                         TimerLabel.Text = "0:00";
                         scoreFromChart.SpeedChart.Series[0].Points.Clear();
                     }
@@ -250,32 +208,53 @@ namespace FastTouch
             }
         }
 
+        // Анимация появления текста при старте сеанса
+        public void StartAnimation(object sender, EventArgs e)
+        {
+            if (appState.state != AppState.States.waitInput) return;
+
+            LabelText.Text += spaceArr[animCount].ToString();
+            if (spaceArr[animCount].ToString() == " ")
+            {
+                LabelText.Text += " ";
+            }
+
+            animCount++;
+
+            if (animCount == spaceArr.Length)
+            {
+                startSessionAnimTimer.Stop();
+                animCount = 0;
+            }
+        }
+
+        // Изменить строку невведенного текста
+        public void ChangeTextLabel()
+        {
+            spaceArr = textData.Substring(startFilePoint, 28).ToCharArray();
+
+            for (int i = 0; i < spaceArr.Length; i++)
+            {
+                LabelText.Text += spaceArr[i].ToString();
+                if (spaceArr[i].ToString() == " ") LabelText.Text += " ";
+            }
+        }
+
         private void MainTextboxChanged(object sender, EventArgs e)
         {
-            if (appStates.state != AppState.States.session) return;
+            if (appState.state == AppState.States.waitInput)
+            {
+                appState.SetSessionState();
+            }
 
-            HandleEnteredLetter();
+            if (appState.state == AppState.States.session || appState.state == AppState.States.waitInput)
+            {
+                HandleEnteredLetter();
+            }
         }
 
         private void HandleEnteredLetter()
         {
-            // Запускает таймеры после первого введенного символа
-            if (isFirstInputedSymbol)
-            {
-                timerStoped = false;
-                isFirstInputedSymbol = false;
-                dateForTimer = new DateTime();
-                stopwatch.Start();
-                timerUI.Start();
-            }
-
-            if (isShouldStartStopwatch)
-            {
-                timerStoped = false;
-                stopwatch.Start();
-                isShouldStartStopwatch = false;
-            }
-
             // Убираем срабатывание функции на очистку текстбокса от введенного символа
             if (TextBoxInput.Text != "")
             {
@@ -328,22 +307,27 @@ namespace FastTouch
             }
         }
 
-        private void TimerTick(object sender, EventArgs e)
+        string prevTimeString;
+        private void AppTick(object sender, EventArgs e)
         {
-            if (timerStoped) return;
+            if (appState.state != AppState.States.session) return;
 
-            dateForTimer = dateForTimer.AddSeconds(1);
-            TimerLabel.Text = dateForTimer.ToString("m:ss");
-            stopwatch.Stop();
-            sessionTime += stopwatch.ElapsedMilliseconds;
-            stopwatch.Restart();
-            inputSpeed = (score * 60000) / sessionTime;
-            AddSpeedChartData();
+            dateForTimer = new DateTime(TimeSpan.FromMilliseconds(stopwatch.ElapsedMilliseconds).Ticks);
+            string uiTimeString = dateForTimer.ToString("m:ss");
+            TimerLabel.Text = uiTimeString;
+
+            if (prevTimeString != uiTimeString && prevTimeString != null)
+            {
+                inputSpeed = (score * 60000) / stopwatch.ElapsedMilliseconds;
+                AddSpeedChartData();
+            }
+
+            prevTimeString = uiTimeString;
         }
 
         public void AddSpeedChartData()
         {
-            scoreFromChart.SpeedChart.Series[0].Points.AddXY(sessionTime / 1000, inputSpeed);
+            scoreFromChart.SpeedChart.Series[0].Points.AddXY(stopwatch.ElapsedMilliseconds / 1000, inputSpeed);
         }
 
         private void SetTextlabelsColor(string colorMode)
@@ -392,9 +376,9 @@ namespace FastTouch
 
         private void HandleSessionLostFocus()
         {
-            if (appStates.state == AppState.States.session)
+            if (appState.state == AppState.States.session)
             {
-
+                appState.SetWaitInputState();
             }
         }
     }
