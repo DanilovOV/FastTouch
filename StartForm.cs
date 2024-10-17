@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
@@ -66,8 +68,6 @@ namespace FastTouch
             LabelText.Parent = LabelSubText;
             LabelPastText.Parent = LabelSubPastText;
 
-            startFilePoint = int.Parse(File.ReadAllText(app.startValuePath));
-
             TextBoxInput.Text = "";
             Results.InitFileSettings();
             appState.SetMenuState();
@@ -84,8 +84,8 @@ namespace FastTouch
 
             textData = Regex.Replace(textData, "[^a-z A-Z а-я А-Я 0-9 , . ! % * ( ) ? : - + =]", "");
             textData = Regex.Replace(textData, @"\s+", " ");
-            
-            inputSymbol = textData.Substring(startFilePoint, 1);
+
+            startFilePoint = int.Parse(File.ReadAllText(app.startValuePath));
         }
 
         // Обработка горячих клавиш
@@ -96,6 +96,13 @@ namespace FastTouch
                 // Инициализация сеанса печати
                 if (e.KeyCode == Keys.Enter)
                 {
+                    if (startFilePoint >= textData.Length - 1)
+                    {
+                        startFilePoint = 0;
+                    }
+
+                    inputSymbol = textData.Substring(startFilePoint, 1);
+
                     TextBoxInput.Focus();
                     appState.SetWaitInputState();
                     LabelText.Text = "";
@@ -103,13 +110,13 @@ namespace FastTouch
 
                     if (isStartAnimation)
                     {
-                        spaceArr = textData.Substring(startFilePoint, 28).ToCharArray();
+                        spaceArr = GetRawUntypedSubstring().ToCharArray();
                         startSessionAnimTimer.Start();
                         isStartAnimation = false;
                     }
                     else
                     {
-                        ChangeTextLabel();
+                        ShiftUntypedText();
                     }
                     
                     dateForTimer = new DateTime(0, DateTimeKind.Unspecified);
@@ -208,7 +215,21 @@ namespace FastTouch
             }
         }
 
-        // Анимация появления текста при старте сеанса
+        private void SetTextlabelsColor(string colorMode)
+        {
+            if (colorMode == "active")
+            {
+                LabelText.BackColor = Color.GhostWhite;
+                LabelPastText.BackColor = Color.Lavender;
+            }
+
+            if (colorMode == "inactive")
+            {
+                LabelText.BackColor = Color.LightGray;
+                LabelPastText.BackColor = Color.LightGray;
+            }
+        }
+
         public void StartAnimation(object sender, EventArgs e)
         {
             if (appState.state != AppState.States.waitInput) return;
@@ -228,16 +249,40 @@ namespace FastTouch
             }
         }
 
-        // Изменить строку невведенного текста
-        public void ChangeTextLabel()
+        public void ShiftUntypedText()
         {
-            spaceArr = textData.Substring(startFilePoint, 28).ToCharArray();
+            LabelText.Text = GetCustomizedText(GetRawUntypedSubstring());
+        }
 
-            for (int i = 0; i < spaceArr.Length; i++)
+        public string GetRawUntypedSubstring()
+        {
+            int substringLength = 28;
+            int restTextLength = textData.Length - startFilePoint;
+
+            if (substringLength >= restTextLength)
             {
-                LabelText.Text += spaceArr[i].ToString();
-                if (spaceArr[i].ToString() == " ") LabelText.Text += " ";
+                substringLength = restTextLength - 1;
             }
+
+            return textData.Substring(startFilePoint, substringLength);
+        }
+
+        public string GetCustomizedText(string text)
+        {
+            StringBuilder customizedText = new StringBuilder();
+
+            foreach (char letter in text)
+            {
+                customizedText.Append(GetCustomizedLetter(letter));
+            }
+
+            return customizedText.ToString();
+        }
+
+        public string GetCustomizedLetter(char letter)
+        {
+            if (letter == ' ') return "  ";
+            else return letter.ToString();
         }
 
         private void MainTextboxChanged(object sender, EventArgs e)
@@ -274,12 +319,7 @@ namespace FastTouch
                     score++;
                     noMistakesCount++;
 
-                    if (inputSymbol == " ")
-                    {
-                        // Вместо одного пробела в видимый лейбл добавляется два, для лучшего визуала
-                        LabelPastText.Text += "  ";
-                    }
-                    else LabelPastText.Text += inputSymbol;
+                    LabelPastText.Text += GetCustomizedLetter(char.Parse(inputSymbol));
 
                     // Ограничивает длину строки напечатанного текста
                     if (LabelPastText.Text.Length > 45)
@@ -302,7 +342,7 @@ namespace FastTouch
                     }
                     inputSymbol = textData.Substring(startFilePoint, 1);
 
-                    ChangeTextLabel();
+                    ShiftUntypedText();
                 }
             }
         }
@@ -319,30 +359,10 @@ namespace FastTouch
             if (prevTimeString != uiTimeString && prevTimeString != null)
             {
                 inputSpeed = (score * 60000) / stopwatch.ElapsedMilliseconds;
-                AddSpeedChartData();
+                scoreFromChart.SpeedChart.Series[0].Points.AddXY(stopwatch.ElapsedMilliseconds / 1000, inputSpeed);
             }
 
             prevTimeString = uiTimeString;
-        }
-
-        public void AddSpeedChartData()
-        {
-            scoreFromChart.SpeedChart.Series[0].Points.AddXY(stopwatch.ElapsedMilliseconds / 1000, inputSpeed);
-        }
-
-        private void SetTextlabelsColor(string colorMode)
-        {
-            if (colorMode == "active")
-            {
-                LabelText.BackColor = Color.GhostWhite;
-                LabelPastText.BackColor = Color.Lavender;
-            }
-
-            if (colorMode == "inactive")
-            {
-                LabelText.BackColor = Color.LightGray;
-                LabelPastText.BackColor = Color.LightGray;
-            }
         }
 
         private void WriteStats()
@@ -370,11 +390,6 @@ namespace FastTouch
         }
 
         private void StartForm_Deactivate(object sender, EventArgs e)
-        {
-            HandleSessionLostFocus();
-        }
-
-        private void HandleSessionLostFocus()
         {
             if (appState.state == AppState.States.session)
             {

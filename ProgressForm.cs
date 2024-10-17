@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
@@ -12,7 +11,7 @@ namespace FastTouch
 
         List<SessionData> sessions;
         SessionDataViews sessionDataViews;
-        short sessionsViewLimit = 300;
+        readonly short sessionsViewLimit = 400;
 
         public ProgressForm()
         {
@@ -22,17 +21,19 @@ namespace FastTouch
 
         private void ProgressForm_Load(object sender, EventArgs e)
         {
+            sessions = GetSessions();
+            PeriodStats periodStats = new PeriodStats(sessions);
+
             LabelNoMistakes.Text = $"Знаков подряд без ошибок: {Results.maxNoMistakesCount}";
             LabelNowSymbols.Text = $"Напечатано символов: {Results.nowSymbols}";
             LabelAllSymbols.Text = $"Всего символов: {Results.allSymbols}";
+            LabelAverageSpeedDay.Text = $"День: {periodStats.GetDayAverageSpeed()}";
+            LabelAverageSpeedWeek.Text = $"Неделя: {periodStats.GetWeekAverageSpeed()}";
+            LabelAverageSpeedMonth.Text = $"Месяц: {periodStats.GetMonthAverageSpeed()}";
+            LabelAverageSpeedYear.Text = $"Год: {periodStats.GetYearAverageSpeed()}";
+            LabelAverageSpeedCommon.Text = $"Всё время: {periodStats.GetCommonAverageSpeed()}";
             ProgressData.SelectionStart = 0;
 
-            initFileStats();
-        }
-
-        private void initFileStats()
-        {
-            sessions = GetSessions();
             SetProgressChartData();
         }
 

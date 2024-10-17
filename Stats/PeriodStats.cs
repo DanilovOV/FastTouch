@@ -1,41 +1,40 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace FastTouch
 {
     internal class PeriodStats
     {
-        List<SessionData> sessions;
-        protected long dayToSec = 86400;
-        long timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        private List<SessionData> sessions;
+        private readonly long dayToSec = 86400;
+        private readonly long weekToSec = 604800;
+        private readonly long monthToSec = 2592000;
+        private readonly long yearToSec = 31536000;
+        private readonly long currentTimestamp;
 
-        public PeriodStats(List<SessionData> sessions) 
-        { 
+        public PeriodStats(List<SessionData> sessions)
+        {
             this.sessions = sessions;
+            currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         }
 
-        public int GetAwerageSpeed()
+        public int GetCommonAverageSpeed()
         {
+            if (sessions.Count == 0)
+            {
+                return 0;
+            }
+
             return (int)sessions.Average(data => data.speed);
         }
 
-        public int GetDayAwerageSpeed()
+        private int GetPeriodAverageSpeed(long periodInSeconds)
         {
-            List<int> periodSessions = new List<int>();
-
-            for (int i = sessions.Count - 1; i >= 0; i--)
-            {
-                if (sessions[i].timestamp >= timestamp - dayToSec)
-                {
-                    periodSessions.Add(sessions[i].speed);
-                }
-                else
-                {
-                    break;
-                }
-
-            }
+            var periodSessions = sessions
+                .Where(data => data.timestamp >= currentTimestamp - periodInSeconds)
+                .Select(data => data.speed)
+                .ToList();
 
             if (periodSessions.Count == 0)
             {
@@ -45,19 +44,24 @@ namespace FastTouch
             return (int)periodSessions.Average();
         }
 
-        public int GetWeekAwerageSpeed()
+        public int GetDayAverageSpeed()
         {
-            return 1;
+            return GetPeriodAverageSpeed(dayToSec);
         }
 
-        public int GetMonthAwerageSpeed()
+        public int GetWeekAverageSpeed()
         {
-            return 1;
+            return GetPeriodAverageSpeed(weekToSec);
         }
 
-        public int GetYearAwerageSpeed()
+        public int GetMonthAverageSpeed()
         {
-            return 1;
+            return GetPeriodAverageSpeed(monthToSec);
+        }
+
+        public int GetYearAverageSpeed()
+        {
+            return GetPeriodAverageSpeed(yearToSec);
         }
     }
 }

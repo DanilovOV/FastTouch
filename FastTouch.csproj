@@ -52,10 +52,8 @@
   <ItemGroup>
     <Compile Include="App.cs" />
     <Compile Include="AppState.cs" />
-    <Compile Include="CurrentSessionData.cs" />
     <Compile Include="SessionData\SessionDataViews.cs" />
     <Compile Include="Stats\CommonStatsWriter.cs" />
-    <Compile Include="ResultStats.cs" />
     <Compile Include="Results.cs" />
     <Compile Include="ProgressForm.cs">
       <SubType>Form</SubType>
