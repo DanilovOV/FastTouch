@@ -79,13 +79,19 @@ namespace FastTouch
 
             using (StreamReader reader = new StreamReader(app.textPath))
             {
-                textData = reader.ReadToEnd();
+                textData = FormatRawTextFromFile(reader.ReadToEnd());
             }
 
-            textData = Regex.Replace(textData, "[^a-z A-Z а-я А-Я 0-9 , . ! % * ( ) ? : - + =]", "");
-            textData = Regex.Replace(textData, @"\s+", " ");
-
             startFilePoint = int.Parse(File.ReadAllText(app.startValuePath));
+        }
+
+        public string FormatRawTextFromFile(string text)
+        {
+            text = Regex.Replace(text, "[^a-zA-Zа-яА-Я0-9,!.%*()?\\-+:=\\s]", "");
+            text = Regex.Replace(text, @"[\r\n]+", " ");
+            text = Regex.Replace(text, @"\s+", " ");
+
+            return text;
         }
 
         // Обработка горячих клавиш
